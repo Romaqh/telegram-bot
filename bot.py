@@ -71,7 +71,7 @@ def create_application():
     application.add_handler(CommandHandler("promote", promote))
     application.add_handler(CommandHandler("buy", buy))
     application.add_handler(CommandHandler("verify", verify))
-    application.add_handler(MessageHandler(filters.StatusUpdate.CHAT_MEMBER, member_update))
+    application.add_handler(MessageHandler(filters.ChatMemberUpdated, member_update))  # 修正为 ChatMemberUpdated
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, lambda update, context: update.message.reply_text("未知命令，请用 /start 查看菜单！")))
 
     return application
