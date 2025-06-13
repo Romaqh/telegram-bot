@@ -8,6 +8,7 @@ from telegram import Update
 
 import os
 import redis
+import asyncio
 
 # Redis 连接
 redis_url = os.environ.get("REDIS_URL")
@@ -75,7 +76,5 @@ def create_application():
 # 模块顶层定义 application
 application = create_application()
 
-if __name__ == "__main__":
-    import asyncio
-    port = int(os.environ.get("PORT", 5000))
-    application.run_webhook(listen="0.0.0.0", port=port)
+# 启动 Webhook（由 Render 触发）
+asyncio.run(application.run_webhook(listen="0.0.0.0", port=int(os.environ.get("PORT", 5000))))
