@@ -44,11 +44,11 @@ async def buy(update: Update, context):
 async def verify(update: Update, context):
     await update.message.reply_text("已验证，请自由发言！")
 
-# 群成员更新
+# 群成员更新（检测新成员加入）
 async def member_update(update: Update, context):
-    if update.chat_member and update.chat_member.new_chat_member:
-        user = update.chat_member.new_chat_member.user
-        await context.bot.send_message(chat_id=update.message.chat_id, text=f"欢迎 {user.username}！请关注 @ROMADMA，回复 /verify")
+    if update.message and update.message.new_chat_members:
+        for user in update.message.new_chat_members:
+            await context.bot.send_message(chat_id=update.message.chat_id, text=f"欢迎 {user.username}！请关注 @ROMADMA，回复 /verify")
 
 # 主函数
 def create_application():
@@ -67,7 +67,7 @@ def create_application():
     application.add_handler(CommandHandler("promote", promote))
     application.add_handler(CommandHandler("buy", buy))
     application.add_handler(CommandHandler("verify", verify))
-    application.add_handler(MessageHandler(filters.ChatMemberUpdated, member_update))  # 修正为 ChatMemberUpdated
+    application.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, member_update))  # 检测新成员
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, lambda update, context: update.message.reply_text("未知命令，请用 /start 查看菜单！")))
 
     return application
