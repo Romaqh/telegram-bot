@@ -15,11 +15,7 @@ r = redis.from_url(redis_url) if redis_url else None
 
 # 命令处理
 async def start(update: Update, context):
-    keyboard = [
-        ["[签到]", "[下载]"],
-        ["[使用说明]", "[推广]"],
-        ["[购买]"]
-    ]
+    keyboard = [["[签到]", "[下载]"], ["[使用说明]", "[推广]"], ["[购买]"]]
     reply_markup = {"keyboard": keyboard, "resize_keyboard": True}
     await update.message.reply_text("欢迎使用！请选择：", reply_markup=reply_markup)
 
