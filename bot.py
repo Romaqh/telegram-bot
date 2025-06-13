@@ -56,7 +56,12 @@ async def member_update(update: Update, context):
 
 # 主函数
 def create_application():
-    application = Application.builder().token(os.environ["BOT_TOKEN"]).build()
+    application = (
+        Application.builder()
+        .token(os.environ["BOT_TOKEN"])
+        .updater(None)  # 禁用 Updater，纯 Webhook 模式
+        .build()
+    )
 
     # 添加处理器
     application.add_handler(CommandHandler("start", start))
