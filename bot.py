@@ -7,7 +7,6 @@ from telegram.ext import (
 from telegram import Update
 
 import os
-import asyncio
 import redis
 
 # Redis 连接
@@ -56,7 +55,7 @@ async def member_update(update: Update, context):
         await context.bot.send_message(chat_id=update.message.chat_id, text=f"欢迎 {user.username}！请关注 @ROMADMA，回复 /verify")
 
 # 主函数
-async def main():
+def create_application():
     application = Application.builder().token(os.environ["BOT_TOKEN"]).build()
 
     # 添加处理器
@@ -72,8 +71,10 @@ async def main():
 
     return application
 
+# 模块顶层定义 application
+application = create_application()
+
 if __name__ == "__main__":
     import asyncio
     port = int(os.environ.get("PORT", 5000))
-    application = asyncio.run(main())
     application.run_webhook(listen="0.0.0.0", port=port)
