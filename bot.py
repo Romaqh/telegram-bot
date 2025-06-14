@@ -8,7 +8,7 @@ from telegram import Update
 import os
 import redis
 
-# Redis 连接（积分存储用）
+# Redis 连接
 redis_url = os.environ.get("REDIS_URL")
 r = redis.from_url(redis_url) if redis_url else None
 
@@ -43,7 +43,7 @@ async def buy(update: Update, context):
 async def verify(update: Update, context):
     await update.message.reply_text("已验证，请自由发言！")
 
-# 群成员更新（新成员加入提醒）
+# 群成员更新
 async def member_update(update: Update, context):
     if update.message and update.message.new_chat_members:
         for user in update.message.new_chat_members:
@@ -68,8 +68,14 @@ def main():
     application.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, member_update))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, lambda update, context: update.message.reply_text("未知命令，请用 /start 查看菜单！")))
 
-    # 启动 Webhook
-    application.run_webhook(listen="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
+    # 启动 Webhook，设置 URL
+    webhook_url = f"https://{os.environ['RENDER_EXTERNAL_HOSTNAME']}"
+    application.run_webhook(
+        listen="0.0.0.0",
+        port=int(os.environ.get("PORT", 5000)),
+        url_path="",  # 可选：如果需要自定义路径，可以设置为 "/webhook"
+        webhook_url=webhook_url
+    )
 
 if __name__ == "__main__":
     main()
