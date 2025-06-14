@@ -5,7 +5,7 @@ from telegram.ext import (
     filters,
     ChatMemberHandler,
 )
-from telegram import Update
+from telegram import Update, ChatPermissions
 import os
 import redis
 
@@ -55,7 +55,14 @@ async def verify(update: Update, context):
     chat_id = update.message.chat.id
     member_status = await context.bot.get_chat_member(CHANNEL_ID, user_id)
     if member_status.status in ["member", "creator", "administrator"]:
-        await context.bot.restrict_chat_member(chat_id, user_id, can_send_messages=True)
+        # 解禁用户（恢复所有权限）
+        permissions = ChatPermissions(
+            can_send_messages=True,
+            can_send_media_messages=True,
+            can_send_other_messages=True,
+            can_add_web_page_previews=True
+        )
+        await context.bot.restrict_chat_member(chat_id, user_id, permissions=permissions)
         await update.message.reply_text("已验证并解禁，请自由发言！")
     else:
         await update.message.reply_text("请先关注 @ROMADMA2 频道，然后再回复 /verify")
@@ -65,7 +72,15 @@ async def handle_new_member(update: Update, context):
     for member in update.message.new_chat_members:
         user_id = member.id
         chat_id = update.message.chat_id
-        await context.bot.restrict_chat_member(chat_id, user_id, can_send_messages=False)
+        # 禁言新成员（仅限制发送消息）
+        permissions = ChatPermissions(
+            can_send_messages=False,
+            can_send_media_messages=False,
+            can_send_other_messages=False,
+            can_add_web_page_previews=False
+        )
+        await context.bot.restrict_chat_member(chat_id, user_id, permissions=permissions)
+        # 发送欢迎消息
         await context.bot.send_message(chat_id, f"欢迎 {member.username}！请关注 @ROMADMA2 并私聊我回复 /verify 解禁发言")
 
 # 主函数
@@ -76,11 +91,13 @@ def main():
         .build()
     )
 
+    # 添加命令和事件处理器
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("verify", verify))
     application.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, handle_new_member))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, lambda update, context: update.message.reply_text("未知命令，请用 /start 查看菜单！")))
 
+    # 设置 Webhook
     render_url = os.environ.get("RENDER_EXTERNAL_HOSTNAME")
     if not render_url:
         raise ValueError("RENDER_EXTERNAL_HOSTNAME 未设置，请检查 Render 环境变量")
