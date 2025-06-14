@@ -56,8 +56,7 @@ def create_application():
     application = (
         Application.builder()
         .token(os.environ["BOT_TOKEN"])
-        .updater(None)  # 禁用 Updater，纯 Webhook 模式
-        .build()
+        .build()  # 移除 .updater(None)，默认启用 updater
     )
 
     # 添加处理器
