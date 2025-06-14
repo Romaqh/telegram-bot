@@ -5,11 +5,10 @@ from telegram.ext import (
     filters,
 )
 from telegram import Update
-
 import os
 import redis
 
-# Redis 连接
+# Redis 连接（积分存储用）
 redis_url = os.environ.get("REDIS_URL")
 r = redis.from_url(redis_url) if redis_url else None
 
@@ -44,13 +43,13 @@ async def buy(update: Update, context):
 async def verify(update: Update, context):
     await update.message.reply_text("已验证，请自由发言！")
 
-# 群成员更新（检测新成员加入）
+# 群成员更新（新成员加入提醒）
 async def member_update(update: Update, context):
     if update.message and update.message.new_chat_members:
         for user in update.message.new_chat_members:
             await context.bot.send_message(chat_id=update.message.chat_id, text=f"欢迎 {user.username}！请关注 @ROMADMA，回复 /verify")
 
-# 创建并启动应用
+# 主函数
 def main():
     application = (
         Application.builder()
@@ -69,7 +68,7 @@ def main():
     application.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, member_update))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, lambda update, context: update.message.reply_text("未知命令，请用 /start 查看菜单！")))
 
-    # 启动 Webhook（让 run_webhook 自己管理循环）
+    # 启动 Webhook
     application.run_webhook(listen="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
 
 if __name__ == "__main__":
