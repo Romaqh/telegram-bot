@@ -8,6 +8,7 @@ from telegram.ext import (
 from telegram import Update, ChatPermissions
 import os
 import redis
+from telegram.error import TelegramError
 
 # Redis 连接（用于积分系统）
 redis_url = os.environ.get("REDIS_URL")
@@ -53,35 +54,47 @@ async def buy(update: Update, context):
 async def verify(update: Update, context):
     user_id = update.message.from_user.id
     chat_id = update.message.chat.id
-    member_status = await context.bot.get_chat_member(CHANNEL_ID, user_id)
-    if member_status.status in ["member", "creator", "administrator"]:
-        # 解禁用户（恢复所有权限）
-        permissions = ChatPermissions(
-            can_send_messages=True,
-            can_send_media_messages=True,
-            can_send_other_messages=True,
-            can_add_web_page_previews=True
-        )
-        await context.bot.restrict_chat_member(chat_id, user_id, permissions=permissions)
-        await update.message.reply_text("已验证并解禁，请自由发言！")
-    else:
-        await update.message.reply_text("请先关注 @ROMADMA2 频道，然后再回复 /verify")
+    try:
+        member_status = await context.bot.get_chat_member(CHANNEL_ID, user_id)
+        if member_status.status in ["member", "creator", "administrator"]:
+            permissions = ChatPermissions(
+                can_send_messages=True,
+                can_send_media_messages=True,
+                can_send_other_messages=True,
+                can_add_web_page_previews=True
+            )
+            await context.bot.restrict_chat_member(chat_id, user_id, permissions=permissions)
+            await update.message.reply_text("已验证并解禁，请自由发言！")
+        else:
+            await update.message.reply_text("请先关注 @ROMADMA2 频道，然后再回复 /verify")
+    except TelegramError as e:
+        await update.message.reply_text(f"验证失败：{str(e)}，请检查是否正确关注 @ROMADMA2")
 
 # 新成员进群禁言
 async def handle_new_member(update: Update, context):
     for member in update.message.new_chat_members:
         user_id = member.id
         chat_id = update.message.chat_id
-        # 禁言新成员（仅限制发送消息）
-        permissions = ChatPermissions(
-            can_send_messages=False,
-            can_send_media_messages=False,
-            can_send_other_messages=False,
-            can_add_web_page_previews=False
-        )
-        await context.bot.restrict_chat_member(chat_id, user_id, permissions=permissions)
-        # 发送欢迎消息
-        await context.bot.send_message(chat_id, f"欢迎 {member.username}！请关注 @ROMADMA2 并私聊我回复 /verify 解禁发言")
+        try:
+            permissions = ChatPermissions(
+                can_send_messages=False,
+                can_send_media_messages=False,
+                can_send_other_messages=False,
+                can_add_web_page_previews=False
+            )
+            await context.bot.restrict_chat_member(chat_id, user_id, permissions=permissions)
+            await context.bot.send_message(chat_id, f"欢迎 {member.username}！请关注 @ROMADMA2 并私聊我回复 /verify 解禁发言")
+        except TelegramError as e:
+            await context.bot.send_message(chat_id, f"禁言失败：{str(e)}，请检查机器人权限")
+
+# 错误处理（全局）
+async def error_handler(update, context):
+    print(f"发生错误: {context.error}")
+    if update:
+        try:
+            await update.message.reply_text("发生了错误，请稍后重试或联系管理员！")
+        except:
+            pass
 
 # 主函数
 def main():
@@ -96,16 +109,18 @@ def main():
     application.add_handler(CommandHandler("verify", verify))
     application.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, handle_new_member))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, lambda update, context: update.message.reply_text("未知命令，请用 /start 查看菜单！")))
+    application.add_error_handler(error_handler)
 
     # 设置 Webhook
     render_url = os.environ.get("RENDER_EXTERNAL_HOSTNAME")
     if not render_url:
         raise ValueError("RENDER_EXTERNAL_HOSTNAME 未设置，请检查 Render 环境变量")
     webhook_url = f"https://{render_url}"
+    port = int(os.environ.get("PORT", 5000))  # 确保读取 PORT 环境变量
 
     application.run_webhook(
         listen="0.0.0.0",
-        port=int(os.environ.get("PORT", 5000)),
+        port=port,
         webhook_url=webhook_url
     )
 
