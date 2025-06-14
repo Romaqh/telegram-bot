@@ -3,6 +3,7 @@ from telegram.ext import (
     MessageHandler,
     filters,
     Application,
+    Updater,
 )
 from telegram import Update
 
@@ -56,7 +57,7 @@ def create_application():
     application = (
         Application.builder()
         .token(os.environ["BOT_TOKEN"])
-        .build()  # 移除 .updater(None)，默认启用 updater
+        .build()  # 默认启用 updater
     )
 
     # 添加处理器
