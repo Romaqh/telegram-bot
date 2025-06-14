@@ -51,12 +51,12 @@ async def member_update(update: Update, context):
         for user in update.message.new_chat_members:
             await context.bot.send_message(chat_id=update.message.chat_id, text=f"欢迎 {user.username}！请关注 @ROMADMA，回复 /verify")
 
-# 创建并启动应用（禁用 Updater 自动初始化）
+# 创建并启动应用
 def main():
     application = (
         Application.builder()
         .token(os.environ["BOT_TOKEN"])
-        .post_init(lambda app: None)  # 禁用默认 Updater 初始化
+        .post_init(lambda app: None)  # 禁用 Updater 初始化
         .build()
     )
 
@@ -77,3 +77,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
