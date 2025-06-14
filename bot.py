@@ -8,7 +8,6 @@ from telegram import Update
 
 import os
 import redis
-import asyncio
 
 # Redis 连接
 redis_url = os.environ.get("REDIS_URL")
@@ -52,7 +51,7 @@ async def member_update(update: Update, context):
             await context.bot.send_message(chat_id=update.message.chat_id, text=f"欢迎 {user.username}！请关注 @ROMADMA，回复 /verify")
 
 # 创建并启动应用
-async def main():
+def main():
     application = (
         Application.builder()
         .token(os.environ["BOT_TOKEN"])
@@ -70,8 +69,8 @@ async def main():
     application.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, member_update))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, lambda update, context: update.message.reply_text("未知命令，请用 /start 查看菜单！")))
 
-    # 启动 Webhook
-    await application.run_webhook(listen="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
+    # 启动 Webhook（让 run_webhook 自己管理循环）
+    application.run_webhook(listen="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()
