@@ -1,3 +1,2 @@
 python-telegram-bot==20.5
 redis==5.0.8
-gunicorn==22.0.0
