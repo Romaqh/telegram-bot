@@ -17,10 +17,13 @@ r = redis.from_url(redis_url) if redis_url else None
 # 频道 ID
 CHANNEL_ID = "@ROMADMA2"
 
+# 显示菜单键盘
+def get_menu_keyboard():
+    return [["[签到]", "[下载]"], ["[使用说明]", "[推广]"], ["[购买]"]]
+
 # 启动命令
 async def start(update: Update, context):
-    keyboard = [["[签到]", "[下载]"], ["[使用说明]", "[推广]"], ["[购买]"]]
-    reply_markup = {"keyboard": keyboard, "resize_keyboard": True}
+    reply_markup = {"keyboard": get_menu_keyboard(), "resize_keyboard": True}
     await update.message.reply_text("欢迎使用！请选择：", reply_markup=reply_markup)
 
 # 签到功能
@@ -31,24 +34,29 @@ async def sign(update: Update, context):
         await update.message.reply_text("+20 积分，今天签到人数：1")
     else:
         await update.message.reply_text("今天已签到！")
+    await update.message.reply_text("请选择其他功能：", reply_markup={"keyboard": get_menu_keyboard(), "resize_keyboard": True})
 
 # 下载功能
 async def download(update: Update, context):
     await update.message.reply_text("下载功能待开发，请稍后！")
+    await update.message.reply_text("请选择其他功能：", reply_markup={"keyboard": get_menu_keyboard(), "resize_keyboard": True})
 
 # 使用说明
 async def usage(update: Update, context):
     await update.message.reply_text("使用说明：/start 开始，[签到] 每日+20积分，[推广] 获取邀请链接，[购买] 联系管理员。")
+    await update.message.reply_text("请选择其他功能：", reply_markup={"keyboard": get_menu_keyboard(), "resize_keyboard": True})
 
 # 推广功能
 async def promote(update: Update, context):
     user_id = update.message.from_user.id
     invite_link = f"https://t.me/ceshi1087?start={user_id}"
     await update.message.reply_text(f"推广链接：{invite_link}，邀请好友得积分！")
+    await update.message.reply_text("请选择其他功能：", reply_markup={"keyboard": get_menu_keyboard(), "resize_keyboard": True})
 
 # 购买功能
 async def buy(update: Update, context):
     await update.message.reply_text("购买请点击：https://mall.lcfaka.com.cn/shop/H49PS9FX 或联系 @ROMADMA 管理员！")
+    await update.message.reply_text("请选择其他功能：", reply_markup={"keyboard": get_menu_keyboard(), "resize_keyboard": True})
 
 # 验证并解禁
 async def verify(update: Update, context):
@@ -87,7 +95,23 @@ async def handle_new_member(update: Update, context):
         except TelegramError as e:
             await context.bot.send_message(chat_id, f"禁言失败：{str(e)}，请检查机器人权限")
 
-# 错误处理（全局）
+# 按钮点击处理（群组和私聊通用）
+async def button_handler(update: Update, context):
+    text = update.message.text
+    if text == "[签到]":
+        await sign(update, context)
+    elif text == "[下载]":
+        await download(update, context)
+    elif text == "[使用说明]":
+        await usage(update, context)
+    elif text == "[推广]":
+        await promote(update, context)
+    elif text == "[购买]":
+        await buy(update, context)
+    else:
+        await update.message.reply_text("未知命令，请用 /start 查看菜单！", reply_markup={"keyboard": get_menu_keyboard(), "resize_keyboard": True})
+
+# 错误处理
 async def error_handler(update, context):
     print(f"发生错误: {context.error}")
     if update:
@@ -108,7 +132,7 @@ def main():
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("verify", verify))
     application.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, handle_new_member))
-    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, lambda update, context: update.message.reply_text("未知命令，请用 /start 查看菜单！")))
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, button_handler))
     application.add_error_handler(error_handler)
 
     # 设置 Webhook
@@ -116,7 +140,7 @@ def main():
     if not render_url:
         raise ValueError("RENDER_EXTERNAL_HOSTNAME 未设置，请检查 Render 环境变量")
     webhook_url = f"https://{render_url}"
-    port = int(os.environ.get("PORT", 5000))  # 确保读取 PORT 环境变量
+    port = int(os.environ.get("PORT", 5000))
 
     application.run_webhook(
         listen="0.0.0.0",
