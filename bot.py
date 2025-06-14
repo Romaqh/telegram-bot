@@ -71,8 +71,9 @@ def main():
     application.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, member_update))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, lambda update, context: update.message.reply_text("未知命令，请用 /start 查看菜单！")))
 
-    # 启动 Webhook
-    loop = asyncio.get_event_loop()
+    # 启动 Webhook（手动创建事件循环）
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
     loop.run_until_complete(application.run_webhook(listen="0.0.0.0", port=int(os.environ.get("PORT", 5000))))
 
 if __name__ == "__main__":
