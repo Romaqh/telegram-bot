@@ -52,11 +52,10 @@ async def member_update(update: Update, context):
             await context.bot.send_message(chat_id=update.message.chat_id, text=f"欢迎 {user.username}！请关注 @ROMADMA，回复 /verify")
 
 # 创建并启动应用
-def main():
+async def main():
     application = (
         Application.builder()
         .token(os.environ["BOT_TOKEN"])
-        .post_init(lambda app: None)  # 禁用 Updater 初始化
         .build()
     )
 
@@ -71,10 +70,8 @@ def main():
     application.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, member_update))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, lambda update, context: update.message.reply_text("未知命令，请用 /start 查看菜单！")))
 
-    # 启动 Webhook（手动创建事件循环）
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    loop.run_until_complete(application.run_webhook(listen="0.0.0.0", port=int(os.environ.get("PORT", 5000))))
+    # 启动 Webhook
+    await application.run_webhook(listen="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
