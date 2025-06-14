@@ -1,8 +1,8 @@
 from telegram.ext import (
+    Application,
     CommandHandler,
     MessageHandler,
     filters,
-    Application,
 )
 from telegram import Update
 
@@ -51,12 +51,13 @@ async def member_update(update: Update, context):
         for user in update.message.new_chat_members:
             await context.bot.send_message(chat_id=update.message.chat_id, text=f"欢迎 {user.username}！请关注 @ROMADMA，回复 /verify")
 
-# 主函数
-def create_application():
+# 创建并启动应用（禁用 Updater 自动初始化）
+def main():
     application = (
         Application.builder()
         .token(os.environ["BOT_TOKEN"])
-        .build()  # 默认启用 updater，20.5 应兼容
+        .post_init(lambda app: None)  # 禁用默认 Updater 初始化
+        .build()
     )
 
     # 添加处理器
@@ -67,13 +68,12 @@ def create_application():
     application.add_handler(CommandHandler("promote", promote))
     application.add_handler(CommandHandler("buy", buy))
     application.add_handler(CommandHandler("verify", verify))
-    application.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, member_update))  # 检测新成员
+    application.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, member_update))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, lambda update, context: update.message.reply_text("未知命令，请用 /start 查看菜单！")))
 
-    return application
+    # 启动 Webhook
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(application.run_webhook(listen="0.0.0.0", port=int(os.environ.get("PORT", 5000))))
 
-# 模块顶层定义 application
-application = create_application()
-
-# 启动 Webhook（由 Render 触发）
-asyncio.run(application.run_webhook(listen="0.0.0.0", port=int(os.environ.get("PORT", 5000))))
+if __name__ == "__main__":
+    main()
